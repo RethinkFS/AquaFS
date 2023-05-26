@@ -1,3 +1,6 @@
 [submodule "AquaZFS"]
 	path = AquaZFS
 	url = https://github.com/RethinkFS/AquaZFS
+[submodule "ExtFS"]
+	path = ExtFS
+	url = https://github.com/RethinkFS/ExtFS
