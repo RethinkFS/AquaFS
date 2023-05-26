@@ -1,0 +1,3 @@
+[submodule "AquaZFS"]
+	path = AquaZFS
+	url = https://github.com/RethinkFS/AquaZFS
