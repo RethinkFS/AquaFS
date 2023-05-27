@@ -4,6 +4,14 @@ set(AQUAFS_VERSION v0.0.2)
 
 project(aquafs)
 
+if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+    set(AQUAFS_IS_PLUGIN OFF)
+else ()
+    set(AQUAFS_IS_PLUGIN ON)
+endif ()
+
+message("AQUAFS_IS_PLUGIN = ${AQUAFS_IS_PLUGIN}")
+
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS)
 
 file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/src/**.cc)
@@ -34,8 +42,7 @@ endforeach ()
 #endforeach ()
 
 # is subdirectory
-list(LENGTH "${CMAKE_PARENT_LIST_FILE}" parent_length)
-if (DEFINED CMAKE_PARENT_LIST_FILE AND ${parent_length} GREATER 1)
+if (AQUAFS_IS_PLUGIN)
     message("${CMAKE_PARENT_LIST_FILE}")
     # Exporting as RocksDB plugin
     file(GLOB_RECURSE AquaFS_SOURCES_local
