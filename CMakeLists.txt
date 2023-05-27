@@ -46,20 +46,29 @@ if (AQUAFS_IS_PLUGIN)
     file(GLOB_RECURSE AquaFS_SOURCES_local
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
             ${CMAKE_CURRENT_SOURCE_DIR}/db/*.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/AquaFS/**/**.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/base/**.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/fs/**.cc
             )
     file(GLOB_RECURSE AquaFS_HEADERS_local
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
             ${CMAKE_CURRENT_SOURCE_DIR}/db/*.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/**/**.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/base/**.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/fs/**.h
             )
+    set(AquaFS_LIBS_local "zbd" "gflags" "uring" "zstd" "lz4" "snappy" "bz2" "z" "numa")
     list(TRANSFORM AquaFS_SOURCES_local REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "")
     list(TRANSFORM AquaFS_HEADERS_local REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "")
-    set(AquaFS_LIBS "zbd" "gflags" "uring" "zstd" "lz4" "snappy" "bz2" "z" "numa" PARENT_SCOPE)
+    if (AQUAFS_EXPORT_PROMETHEUS)
+        list(APPEND AquaFS_LIBS_local prometheus-cpp-pull prometheus-cpp-core)
+    else ()
+        list(REMOVE_ITEM AquaFS_SOURCES_local "AquaZFS/fs/metrics_prometheus.cc")
+        list(REMOVE_ITEM AquaFS_HEADERS_local "AquaZFS/fs/metrics_prometheus.h")
+    endif ()
+    set(AquaFS_LIBS ${AquaFS_LIBS_local} PARENT_SCOPE)
     set(AquaFS_CMAKE_EXE_LINKER_FLAGS "-u aquafs_filesystems_reg" PARENT_SCOPE)
     set(AquaFS_INCLUDE_PATHS "fs" PARENT_SCOPE)
     set(AquaFS_HEADERS ${AquaFS_HEADERS_local} PARENT_SCOPE)
     set(AquaFS_SOURCES ${AquaFS_SOURCES_local} PARENT_SCOPE)
-    message(STATUS "AquaFS_HEADERS_local = ${AquaFS_HEADERS_local}, AquaFS_SOURCES_local = ${AquaFS_SOURCES_local}")
-    message(STATUS "AquaFS_HEADERS = ${AquaFS_HEADERS}, AquaFS_SOURCES = ${AquaFS_SOURCES}")
+    #    message(STATUS "AquaFS_HEADERS_local = ${AquaFS_HEADERS_local}, AquaFS_SOURCES_local = ${AquaFS_SOURCES_local}")
+    #    message(STATUS "AquaFS_HEADERS = ${AquaFS_HEADERS}, AquaFS_SOURCES = ${AquaFS_SOURCES}")
 endif ()
