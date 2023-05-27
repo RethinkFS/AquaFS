@@ -12,7 +12,12 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_library(aqua STATIC ${sources})
 target_link_libraries(aqua aquaz)
 
+find_package(gflags REQUIRED)
 add_definitions(-DGFLAGS=1)
+include_directories(${GFLAGS_INCLUDE_DIR})
+
+add_definitions(-DNUMA)
+add_definitions(-DWITH_TERARKDB=1 -DOS_LINUX=1 -DROCKSDB_PLATFORM_POSIX=1)
 
 file(GLOB programs ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.cc)
 foreach (program ${programs})
@@ -27,3 +32,26 @@ endforeach ()
 #    add_executable(${name} ${program})
 #    target_link_libraries(${name} aqua rocksdb)
 #endforeach ()
+
+# is subdirectory
+list(LENGTH "${CMAKE_PARENT_LIST_FILE}" parent_length)
+if (DEFINED CMAKE_PARENT_LIST_FILE AND ${parent_length} GREATER 1)
+    message("${CMAKE_PARENT_LIST_FILE}")
+    # Exporting as RocksDB plugin
+    file(GLOB_RECURSE AquaFS_SOURCES_local
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/**.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/db/**.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaFS/**.cc
+            )
+    file(GLOB_RECURSE AquaFS_HEADERS_local
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/**.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/db/**.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/**/*.h
+            )
+    set(aquafs_LIBS "zbd" "gflags" "uring" "zstd" "lz4" "snappy" "bz2" "z" "numa" PARENT_SCOPE)
+    set(aquafs_CMAKE_EXE_LINKER_FLAGS "-u aquafs_filesystems_reg" PARENT_SCOPE)
+    set(aquafs_INCLUDE_PATHS "fs" PARENT_SCOPE)
+    set(aquafs_HEADERS ${aquafs_HEADERS_local} PARENT_SCOPE)
+    set(aquafs_SOURCES ${aquafs_SOURCES_local} PARENT_SCOPE)
+
+endif ()
