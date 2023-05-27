@@ -10,8 +10,6 @@ else ()
     set(AQUAFS_IS_PLUGIN ON)
 endif ()
 
-message("AQUAFS_IS_PLUGIN = ${AQUAFS_IS_PLUGIN}")
-
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS)
 
 file(GLOB_RECURSE sources ${CMAKE_CURRENT_SOURCE_DIR}/src/**.cc)
@@ -43,22 +41,25 @@ endforeach ()
 
 # is subdirectory
 if (AQUAFS_IS_PLUGIN)
-    message("${CMAKE_PARENT_LIST_FILE}")
+    message("CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
     # Exporting as RocksDB plugin
     file(GLOB_RECURSE AquaFS_SOURCES_local
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/**.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/db/**.cc
-            ${CMAKE_CURRENT_SOURCE_DIR}/AquaFS/**.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/db/*.cc
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaFS/**/**.cc
             )
     file(GLOB_RECURSE AquaFS_HEADERS_local
-            ${CMAKE_CURRENT_SOURCE_DIR}/src/**.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/db/**.h
-            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/**/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/db/*.h
+            ${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS/**/**.h
             )
-    set(aquafs_LIBS "zbd" "gflags" "uring" "zstd" "lz4" "snappy" "bz2" "z" "numa" PARENT_SCOPE)
-    set(aquafs_CMAKE_EXE_LINKER_FLAGS "-u aquafs_filesystems_reg" PARENT_SCOPE)
-    set(aquafs_INCLUDE_PATHS "fs" PARENT_SCOPE)
-    set(aquafs_HEADERS ${aquafs_HEADERS_local} PARENT_SCOPE)
-    set(aquafs_SOURCES ${aquafs_SOURCES_local} PARENT_SCOPE)
-
+    list(TRANSFORM AquaFS_SOURCES_local REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "")
+    list(TRANSFORM AquaFS_HEADERS_local REPLACE "${CMAKE_CURRENT_SOURCE_DIR}/" "")
+    set(AquaFS_LIBS "zbd" "gflags" "uring" "zstd" "lz4" "snappy" "bz2" "z" "numa" PARENT_SCOPE)
+    set(AquaFS_CMAKE_EXE_LINKER_FLAGS "-u aquafs_filesystems_reg" PARENT_SCOPE)
+    set(AquaFS_INCLUDE_PATHS "fs" PARENT_SCOPE)
+    set(AquaFS_HEADERS ${AquaFS_HEADERS_local} PARENT_SCOPE)
+    set(AquaFS_SOURCES ${AquaFS_SOURCES_local} PARENT_SCOPE)
+    # message(STATUS "AquaFS_HEADERS_local = ${AquaFS_HEADERS_local}, AquaFS_SOURCES_local = ${AquaFS_SOURCES_local}")
+    # message(STATUS "AquaFS_HEADERS = ${AquaFS_HEADERS}, AquaFS_SOURCES = ${AquaFS_SOURCES}")
 endif ()
