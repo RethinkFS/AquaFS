@@ -25,11 +25,20 @@ include_directories(${GFLAGS_INCLUDE_DIR})
 add_definitions(-DNUMA)
 add_definitions(-DWITH_TERARKDB=1 -DOS_LINUX=1 -DROCKSDB_PLATFORM_POSIX=1)
 
-file(GLOB programs ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.cc)
+find_package(PkgConfig REQUIRED)
+#find_package(FUSE3 REQUIRED)
+pkg_search_module(fuse3 REQUIRED fuse3)
+include_directories(fuse3_INCLUDE_DIRS)
+add_definitions(-D_FILE_OFFSET_BITS=64)
+
+file(GLOB programs
+        ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/programs/*.c
+        )
 foreach (program ${programs})
     cmake_path(GET program STEM name)
     add_executable(${name} ${program})
-    target_link_libraries(${name} aqua)
+    target_link_libraries(${name} aqua fuse3)
 endforeach ()
 
 #file(GLOB programs_db ${CMAKE_CURRENT_SOURCE_DIR}/db/*.cc)
@@ -41,7 +50,6 @@ endforeach ()
 
 # is subdirectory
 if (AQUAFS_IS_PLUGIN)
-    message("CMAKE_CURRENT_SOURCE_DIR = ${CMAKE_CURRENT_SOURCE_DIR}")
     # Exporting as RocksDB plugin
     file(GLOB_RECURSE AquaFS_SOURCES_local
             ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
