@@ -1,40 +1,40 @@
 
 AquaFS_SOURCES-y = \
-	AquaZFS/programs/aquazfs.cc  \
-  AquaZFS/programs/test_mkfs.cc  \
-  AquaZFS/programs/defconfig.cc  \
-  AquaZFS/fs/zonefs_aquafs.cc  \
-  AquaZFS/fs/configuration.cc  \
-  AquaZFS/fs/zbd_aquafs.cc  \
-  AquaZFS/fs/zbdlib_aquafs.cc  \
-  AquaZFS/fs/io_aquafs.cc  \
-  AquaZFS/fs/metrics_prometheus.cc  \
-  AquaZFS/fs/raid/zone_raidc.cc  \
-  AquaZFS/fs/raid/zone_raid_auto.cc  \
-  AquaZFS/fs/raid/zone_raid.cc  \
-  AquaZFS/fs/raid/zone_raid0.cc  \
-  AquaZFS/fs/raid/zone_raid1.cc  \
-  AquaZFS/fs/fs_aquafs.cc  \
-  AquaZFS/base/slice.cc  \
-  AquaZFS/base/fs_posix.cc  \
-  AquaZFS/base/file_system.cc  \
-  AquaZFS/base/coding.cc  \
-  AquaZFS/base/io_status.cc  \
-  AquaZFS/base/io_posix.cc  \
-  AquaZFS/base/status.cc  \
-  AquaZFS/base/env.cc  \
-  AquaZFS/util/hash.cc  \
-  AquaZFS/util/xxhash.cc  \
-  AquaZFS/util/string_util.cc  \
-  AquaZFS/util/unique_id_gen.cc  \
-  AquaZFS/util/crc32c.cc  \
-  AquaZFS/util/port.cc  \
-  src/router.cc  \
+	src/router.cc \
+  AquaZFS/programs/aquazfs.cc \
+  AquaZFS/programs/test_mkfs.cc \
+  AquaZFS/programs/defconfig.cc \
+  AquaZFS/fs/zonefs_aquafs.cc \
+  AquaZFS/fs/configuration.cc \
+  AquaZFS/fs/zbd_aquafs.cc \
+  AquaZFS/fs/zbdlib_aquafs.cc \
+  AquaZFS/fs/io_aquafs.cc \
+  AquaZFS/fs/metrics_prometheus.cc \
+  AquaZFS/fs/raid/zone_raidc.cc \
+  AquaZFS/fs/raid/zone_raid_auto.cc \
+  AquaZFS/fs/raid/zone_raid.cc \
+  AquaZFS/fs/raid/zone_raid0.cc \
+  AquaZFS/fs/raid/zone_raid1.cc \
+  AquaZFS/fs/fs_aquafs.cc \
+  AquaZFS/base/hash.cc \
+  AquaZFS/base/slice.cc \
+  AquaZFS/base/fs_posix.cc \
+  AquaZFS/base/file_system.cc \
+  AquaZFS/base/xxhash.cc \
+  AquaZFS/base/coding.cc \
+  AquaZFS/base/string_util.cc \
+  AquaZFS/base/io_status.cc \
+  AquaZFS/base/unique_id_gen.cc \
+  AquaZFS/base/crc32c.cc \
+  AquaZFS/base/port.cc \
+  AquaZFS/base/io_posix.cc \
+  AquaZFS/base/status.cc \
+  AquaZFS/base/env.cc \
   db/adapter.cc
 
-
 AquaFS_HEADERS-y = \
-	AquaZFS/fs/filesystem_utility.h \
+	src/router.h \
+  AquaZFS/fs/filesystem_utility.h \
   AquaZFS/fs/metrics_sample.h \
   AquaZFS/fs/metrics_prometheus.h \
   AquaZFS/fs/io_aquafs.h \
@@ -54,30 +54,29 @@ AquaFS_HEADERS-y = \
   AquaZFS/base/env.h \
   AquaZFS/base/lang.h \
   AquaZFS/base/coding.h \
+  AquaZFS/base/sys_time.h \
   AquaZFS/base/math128.h \
+  AquaZFS/base/xxph3.h \
+  AquaZFS/base/port.h \
   AquaZFS/base/status.h \
+  AquaZFS/base/iostats_context_imp.h \
+  AquaZFS/base/unique_id_gen.h \
+  AquaZFS/base/fastrange.h \
   AquaZFS/base/coding_lean.h \
   AquaZFS/base/file_system.h \
+  AquaZFS/base/crc32c.h \
   AquaZFS/base/io_posix.h \
+  AquaZFS/base/hash128.h \
   AquaZFS/base/slice_transform.h \
+  AquaZFS/base/string_util.h \
   AquaZFS/base/mutexlock.h \
   AquaZFS/base/slice.h \
+  AquaZFS/base/hash.h \
   AquaZFS/base/io_status.h \
   AquaZFS/base/math.h \
+  AquaZFS/base/sync_point.h \
   AquaZFS/base/system_clock.h \
-  AquaZFS/util/monitoring/iostats_context_imp.h \
-  AquaZFS/util/monitoring/sync_point.h \
-  AquaZFS/util/sys_time.h \
-  AquaZFS/util/xxph3.h \
-  AquaZFS/util/port.h \
-  AquaZFS/util/unique_id_gen.h \
-  AquaZFS/util/fastrange.h \
-  AquaZFS/util/crc32c.h \
-  AquaZFS/util/hash128.h \
-  AquaZFS/util/string_util.h \
-  AquaZFS/util/hash.h \
-  AquaZFS/util/xxhash.h \
-  src/router.h \
+  AquaZFS/base/xxhash.h \
   db/adapter.h
 
 AquaFS_PKGCONFIG_REQUIRES-y += "libzbd >= 1.5.0"
