@@ -28,7 +28,6 @@ add_definitions(-DWITH_TERARKDB=1 -DOS_LINUX=1 -DROCKSDB_PLATFORM_POSIX=1)
 find_package(PkgConfig REQUIRED)
 #find_package(FUSE3 REQUIRED)
 pkg_search_module(fuse3 REQUIRED fuse3)
-include_directories(fuse3_INCLUDE_DIRS)
 add_definitions(-D_FILE_OFFSET_BITS=64)
 
 file(GLOB programs

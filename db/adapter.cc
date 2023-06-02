@@ -11,6 +11,60 @@
 #include "rocksdb/utilities/object_registry.h"
 
 namespace aquafs {
+#define CAST_FROM_AQUA(x)                      \
+  inline rocksdb::x fromAqua(aquafs::x from) { \
+    return static_cast<rocksdb::x>(from);      \
+  }
+#define CAST_FROM_AQUA_CLONE(x)                       \
+  inline rocksdb::x fromAqua(const aquafs::x &from) { \
+    return static_cast<rocksdb::x>(from);             \
+  }
+#define CAST_FROM_AQUA_MOVE(x)                         \
+  inline rocksdb::x fromAqua(const aquafs::x &&from) { \
+    return static_cast<rocksdb::x>(from);              \
+  }
+
+CAST_FROM_AQUA_MOVE(IOStatus::Code)
+CAST_FROM_AQUA_MOVE(IOStatus::SubCode)
+CAST_FROM_AQUA_MOVE(Status::Severity)
+CAST_FROM_AQUA_CLONE(Temperature)
+
+inline rocksdb::Slice fromAqua(aquafs::Slice &&from) {
+  return rocksdb::Slice(from.data(), from.size());
+}
+inline rocksdb::IOStatus fromAqua(aquafs::IOStatus &&from) {
+  return {fromAqua(from.code()),     fromAqua(from.subcode()),
+          fromAqua(from.severity()), from.retryable_,
+          from.data_loss_,           from.scope_,
+          std::move(from.state_)};
+}
+inline aquafs::IOOptions toAqua(const rocksdb::IOOptions &from) {
+  return aquafs::IOOptions(from.force_dir_fsync);
+}
+#define CAST_TO_AQUA(x)                            \
+  inline aquafs::x toAqua(const rocksdb::x from) { \
+    return static_cast<aquafs::x>(from);           \
+  }
+#define CAST_TO_AQUA_CLONE(x)                       \
+  inline aquafs::x toAqua(const rocksdb::x &from) { \
+    return static_cast<aquafs::x>(from);            \
+  }
+#define CAST_TO_AQUA_MOVE(x)                         \
+  inline aquafs::x toAqua(const rocksdb::x &&from) { \
+    return static_cast<aquafs::x>(from);             \
+  }
+
+CAST_TO_AQUA_CLONE(Temperature)
+CAST_TO_AQUA_CLONE(ChecksumType)
+
+inline aquafs::FileOptions toAqua(const rocksdb::FileOptions &from) {
+  aquafs::FileOptions r;
+  r.io_options = toAqua(from.io_options);
+  r.temperature = toAqua(from.temperature);
+  r.handoff_checksum_type = toAqua(from.handoff_checksum_type);
+  return r;
+}
+
 AquaFSFileSystemWrapper::AquaFSFileSystemWrapper(
     std::unique_ptr<aquafs::FileSystem> inner,
     std::shared_ptr<rocksdb::FileSystem> aux_fs)
@@ -18,11 +72,58 @@ AquaFSFileSystemWrapper::AquaFSFileSystemWrapper(
 
 AquaFSFileSystemWrapper::~AquaFSFileSystemWrapper() {}
 
+class FSSequentialFileAdapter : public rocksdb::FSSequentialFile {
+  std::unique_ptr<aquafs::FSSequentialFile> inner;
+
+ public:
+  explicit FSSequentialFileAdapter(
+      std::unique_ptr<aquafs::FSSequentialFile> &&inner_)
+      : inner(std::move(inner_)) {}
+  rocksdb::IOStatus Read(size_t n, const rocksdb::IOOptions &options,
+                         rocksdb::Slice *result, char *scratch,
+                         rocksdb::IODebugContext *dbg) override {
+    aquafs::Slice data;
+    auto ret =
+        fromAqua(inner->Read(n, toAqua(options), &data, scratch, nullptr));
+    *result = fromAqua(std::move(data));
+    return ret;
+  }
+  rocksdb::IOStatus Skip(uint64_t n) override {
+    return fromAqua(inner->Skip(n));
+  }
+  bool use_direct_io() const override { return inner->use_direct_io(); }
+  size_t GetRequiredBufferAlignment() const override {
+    return inner->GetRequiredBufferAlignment();
+  }
+  rocksdb::IOStatus InvalidateCache(size_t size, size_t size1) override {
+    return fromAqua(inner->InvalidateCache(size, size1));
+  }
+  rocksdb::IOStatus PositionedRead(uint64_t uint64, size_t size,
+                                   const rocksdb::IOOptions &options,
+                                   rocksdb::Slice *slice, char *string,
+                                   rocksdb::IODebugContext *context) override {
+    aquafs::IOOptions options_ = toAqua(options);
+    aquafs::Slice data;
+    auto ret = fromAqua(
+        inner->PositionedRead(uint64, size, options_, &data, string, nullptr));
+    *slice = fromAqua(std::move(data));
+    return ret;
+  }
+  rocksdb::Temperature GetTemperature() const override {
+    return fromAqua(inner->GetTemperature());
+  }
+};
+
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewSequentialFile(
     const std::string &f, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSSequentialFile> *r,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::NewSequentialFile(f, file_opts, r, dbg);
+  // return FileSystemWrapper::NewSequentialFile(f, file_opts, r, dbg);
+  std::unique_ptr<aquafs::FSSequentialFile> result;
+  auto ret = fromAqua(
+      inner_->NewSequentialFile(f, toAqua(file_opts), &result, nullptr));
+  *r = std::make_unique<FSSequentialFileAdapter>(std::move(result));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewRandomAccessFile(
     const std::string &f, const rocksdb::FileOptions &file_opts,
