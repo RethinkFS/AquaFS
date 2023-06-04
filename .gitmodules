@@ -4,3 +4,6 @@
 [submodule "ExtFS"]
 	path = ExtFS
 	url = https://github.com/RethinkFS/ExtFS
+[submodule "aquafs-plugin"]
+	path = aquafs-plugin
+	url = https://github.com/RethinkFS/aquafs-plugin
