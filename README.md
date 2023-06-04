@@ -14,6 +14,7 @@
 - 主要文档位置：[在线浏览](https://rethinkfs.github.io/docs/)
 - 进度相关信息：[进度报告](https://rethinkfs.github.io/docs/%E8%BF%9B%E5%BA%A6%E6%8A%A5%E5%91%8A/index.html)
 - 初赛说明文档：[TeX 项目](https://github.com/RethinkFS/paper)
+- 使用文档：[Get Started](https://rethinkfs.github.io/docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/GetStarted.html)
 
 ## 赛题完成情况
 
@@ -72,3 +73,5 @@
    1. 使用 Rust 开发的一个简单 Ext2 rev0.0 兼容文件系统
    2. 集成进 AquaFS，作为普通数据存储后端
    3. 暂时使用 FUSE 接口
+7. `docs`：通过 mdbook 构建的在线文档
+8. `paper`：通过 TeX 构建的比赛提交文档

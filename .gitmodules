@@ -7,3 +7,9 @@
 [submodule "aquafs-plugin"]
 	path = aquafs-plugin
 	url = https://github.com/RethinkFS/aquafs-plugin
+[submodule "docs"]
+	path = docs
+	url = https://github.com/RethinkFS/docs
+[submodule "paper"]
+	path = paper
+	url = https://github.com/RethinkFS/paper
