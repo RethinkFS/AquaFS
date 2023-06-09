@@ -11,10 +11,11 @@
 
 ## 文档信息
 
-- 主要文档位置：[在线浏览](https://rethinkfs.github.io/docs/)
-- 进度相关信息：[进度报告](https://rethinkfs.github.io/docs/%E8%BF%9B%E5%BA%A6%E6%8A%A5%E5%91%8A/index.html)
-- 初赛说明文档：[TeX 项目](https://github.com/RethinkFS/paper)
-- 使用文档：[Get Started](https://rethinkfs.github.io/docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/GetStarted.html)
+- 主要技术报告 PDF：[RethinkFS-初赛报告.pdf](RethinkFS-初赛报告.pdf)
+- 过程文档位置：[在线浏览](https://rethinkfs.github.io/docs/) / [文档源码](docs/SUMMARY.md)
+- 进度相关信息：[在线浏览：进度报告](https://rethinkfs.github.io/docs/%E8%BF%9B%E5%BA%A6%E6%8A%A5%E5%91%8A/index.html)
+- 初赛技术报告源码：[TeX 项目](paper/)
+- 使用文档：[在线浏览：Get Started](https://rethinkfs.github.io/docs/%E4%BD%BF%E7%94%A8%E6%96%87%E6%A1%A3/GetStarted.html)
 
 ## 赛题完成情况
 
@@ -91,3 +92,5 @@ AquaFS 是一个以 ZenFS 为原型的适用于 Zoned Storage SSD 的文件系�
    3. 暂时使用 FUSE 接口
 7. `docs`：通过 mdbook 构建的在线文档
 8. `paper`：通过 TeX 构建的比赛提交文档
+
+上述许多文件夹本应是 git submodules，但是由于赛题提交限制只能提交一个分支的文件，所以复制出这些子项目中的文件并添加到本代码仓库 `main` 分支。如果需要查看有子项目的版本，或者您需要查看子项目的提交记录，可以查看[本仓库的 `submodules` 分支](https://gitlab.eduxiji.net/202318123111358/project1466467-176094/-/tree/submodules?ref_type=heads)，其中子项目主要指向[我们的 Github](https://github.com/orgs/RethinkFS/repositories)。
