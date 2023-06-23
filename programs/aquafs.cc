@@ -6,6 +6,7 @@
 
 #include <iostream>
 
+#include "../AquaZFS/fs/tools/tools.h"
 #include "../AquaZFS/fs/version.h"
 
 int main(int argc, char **argv) {
@@ -18,7 +19,8 @@ int main(int argc, char **argv) {
   }
   gflags::SetVersionString(AQUAFS_VERSION);
   std::string subcmd(argv[1]);
-  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  // gflags::ParseCommandLineFlags(&argc, &argv, true);
   // TODO
+  return aquafs::aquafs_tools(argc, argv);
   return 0;
 }
