@@ -8,6 +8,7 @@ if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
     set(AQUAFS_IS_PLUGIN OFF)
 else ()
     set(AQUAFS_IS_PLUGIN ON)
+    add_definitions(-DAQUAFS_IS_PLUGIN=1)
 endif ()
 
 add_subdirectory(${CMAKE_CURRENT_SOURCE_DIR}/AquaZFS)

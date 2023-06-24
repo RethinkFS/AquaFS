@@ -30,13 +30,25 @@ CAST_FROM_AQUA_MOVE(Status::Severity)
 CAST_FROM_AQUA_CLONE(Temperature)
 
 inline rocksdb::Slice fromAqua(aquafs::Slice &&from) {
-  return rocksdb::Slice(from.data(), from.size());
+  return {from.data(), from.size()};
+}
+inline rocksdb::Env::IOPriority fromAqua(const aquafs::IOPriority &from) {
+  return static_cast<rocksdb::Env::IOPriority>(from);
+}
+inline rocksdb::Env::WriteLifeTimeHint fromAqua(
+    const aquafs::WriteLifeTimeHint &from) {
+  return static_cast<rocksdb::Env::WriteLifeTimeHint>(from);
 }
 inline rocksdb::IOStatus fromAqua(aquafs::IOStatus &&from) {
   return {fromAqua(from.code()),     fromAqua(from.subcode()),
           fromAqua(from.severity()), from.retryable_,
           from.data_loss_,           from.scope_,
           std::move(from.state_)};
+}
+inline rocksdb::Status fromAqua(aquafs::Status &&from) {
+  return rocksdb::Status(fromAqua(from.code()), fromAqua(from.subcode()),
+                         fromAqua(from.severity()), from.retryable_,
+                         from.data_loss_, from.scope_, std::move(from.state_));
 }
 inline aquafs::IOOptions toAqua(const rocksdb::IOOptions &from) {
   return aquafs::IOOptions(from.force_dir_fsync);
@@ -57,11 +69,24 @@ inline aquafs::IOOptions toAqua(const rocksdb::IOOptions &from) {
 CAST_TO_AQUA_CLONE(Temperature)
 CAST_TO_AQUA_CLONE(ChecksumType)
 
+inline aquafs::WriteLifeTimeHint toAqua(
+    const rocksdb::Env::WriteLifeTimeHint &from) {
+  return static_cast<aquafs::WriteLifeTimeHint>(from);
+}
+inline aquafs::IOPriority toAqua(const rocksdb::Env::IOPriority &from) {
+  return static_cast<aquafs::IOPriority>(from);
+}
 inline aquafs::FileOptions toAqua(const rocksdb::FileOptions &from) {
   aquafs::FileOptions r;
   r.io_options = toAqua(from.io_options);
   r.temperature = toAqua(from.temperature);
   r.handoff_checksum_type = toAqua(from.handoff_checksum_type);
+  return r;
+}
+inline aquafs::Slice toAqua(const rocksdb::Slice &from) {
+  aquafs::Slice r;
+  r.data_ = from.data_;
+  r.size_ = from.size_;
   return r;
 }
 
@@ -114,11 +139,241 @@ class FSSequentialFileAdapter : public rocksdb::FSSequentialFile {
   }
 };
 
+class FSRandomAccessFileAdapter : public rocksdb::FSRandomAccessFile {
+  std::unique_ptr<aquafs::FSRandomAccessFile> inner;
+
+ public:
+  explicit FSRandomAccessFileAdapter(
+      std::unique_ptr<aquafs::FSRandomAccessFile> &&inner_)
+      : inner(std::move(inner_)) {}
+  rocksdb::IOStatus Read(uint64_t offset, size_t n,
+                         const rocksdb::IOOptions &options,
+                         rocksdb::Slice *result, char *scratch,
+                         rocksdb::IODebugContext *dbg) const override {
+    aquafs::Slice data;
+    auto ret = fromAqua(
+        inner->Read(offset, n, toAqua(options), &data, scratch, nullptr));
+    *result = fromAqua(std::move(data));
+    return ret;
+  }
+  rocksdb::IOStatus Prefetch(uint64_t uint64, size_t size,
+                             const rocksdb::IOOptions &options,
+                             rocksdb::IODebugContext *context) override {
+    // OK for zoned random assess files
+    return rocksdb::IOStatus::OK();
+  }
+  rocksdb::IOStatus MultiRead(rocksdb::FSReadRequest *reqs, size_t num_reqs,
+                              const rocksdb::IOOptions &options,
+                              rocksdb::IODebugContext *dbg) override {
+    // default logics
+    for (size_t i = 0; i < num_reqs; ++i) {
+      rocksdb::FSReadRequest &req = reqs[i];
+      req.status =
+          Read(req.offset, req.len, options, &req.result, req.scratch, dbg);
+    }
+    return rocksdb::IOStatus::OK();
+  }
+  size_t GetUniqueId(char *string, size_t size) const override {
+    // for zoned file
+    return 0;
+  }
+  void Hint(AccessPattern pattern) override {
+    // nothing in zoned file
+  }
+  bool use_direct_io() const override { return inner->use_direct_io(); }
+  size_t GetRequiredBufferAlignment() const override {
+    return inner->GetRequiredBufferAlignment();
+  }
+  rocksdb::IOStatus InvalidateCache(size_t size, size_t size1) override {
+    return fromAqua(inner->InvalidateCache(size, size1));
+  }
+  rocksdb::IOStatus ReadAsync(
+      rocksdb::FSReadRequest &req, const rocksdb::IOOptions &opts,
+      std::function<void(const rocksdb::FSReadRequest &, void *)> cb,
+      void *cb_arg, void ** /*io_handle*/, IOHandleDeleter * /*del_fn*/,
+      rocksdb::IODebugContext * /*dbg*/) override {
+    req.status =
+        Read(req.offset, req.len, opts, &(req.result), req.scratch, nullptr);
+    cb(req, cb_arg);
+    return rocksdb::IOStatus::OK();
+  }
+  rocksdb::Temperature GetTemperature() const override {
+    return fromAqua(inner->GetTemperature());
+  }
+};
+
+class FSWritableFileAdapter : public rocksdb::FSWritableFile {
+  std::unique_ptr<aquafs::FSWritableFile> inner;
+
+ public:
+  explicit FSWritableFileAdapter(
+      std::unique_ptr<aquafs::FSWritableFile> &&inner_)
+      : inner(std::move(inner_)) {}
+  rocksdb::IOStatus Append(const rocksdb::Slice &data,
+                           const rocksdb::IOOptions &options,
+                           rocksdb::IODebugContext *dbg) override {
+    aquafs::Slice d = toAqua(data);
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Append(d, o, nullptr));
+  }
+  rocksdb::IOStatus Append(const rocksdb::Slice &data,
+                           const rocksdb::IOOptions &options,
+                           const rocksdb::DataVerificationInfo &info,
+                           rocksdb::IODebugContext *dbg) override {
+    return Append(data, options, dbg);
+  }
+  rocksdb::IOStatus PositionedAppend(
+      const rocksdb::Slice &slice, uint64_t uint64,
+      const rocksdb::IOOptions &options,
+      rocksdb::IODebugContext *context) override {
+    aquafs::Slice d = toAqua(slice);
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->PositionedAppend(d, uint64, o, nullptr));
+  }
+  rocksdb::IOStatus PositionedAppend(
+      const rocksdb::Slice &slice, uint64_t uint64,
+      const rocksdb::IOOptions &options,
+      const rocksdb::DataVerificationInfo &info,
+      rocksdb::IODebugContext *context) override {
+    return PositionedAppend(slice, uint64, options, context);
+  }
+  rocksdb::IOStatus Truncate(uint64_t uint64, const rocksdb::IOOptions &options,
+                             rocksdb::IODebugContext *context) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Truncate(uint64, o, nullptr));
+  }
+  rocksdb::IOStatus Close(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *context) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Close(o, nullptr));
+  }
+  rocksdb::IOStatus Flush(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Flush(o, nullptr));
+  }
+  rocksdb::IOStatus Sync(const rocksdb::IOOptions &options,
+                         rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Sync(o, nullptr));
+  }
+  rocksdb::IOStatus Fsync(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Fsync(o, nullptr));
+  }
+  bool IsSyncThreadSafe() const override { return inner->IsSyncThreadSafe(); }
+  bool use_direct_io() const override { return inner->use_direct_io(); }
+  size_t GetRequiredBufferAlignment() const override {
+    return inner->GetRequiredBufferAlignment();
+  }
+  void SetWriteLifeTimeHint(rocksdb::Env::WriteLifeTimeHint hint) override {
+    inner->SetWriteLifeTimeHint(toAqua(hint));
+  }
+  void SetIOPriority(rocksdb::Env::IOPriority pri) override {
+    inner->SetIOPriority(toAqua(pri));
+  }
+  rocksdb::Env::IOPriority GetIOPriority() override {
+    return fromAqua(inner->GetIOPriority());
+  }
+  rocksdb::Env::WriteLifeTimeHint GetWriteLifeTimeHint() override {
+    return fromAqua(inner->GetWriteLifeTimeHint());
+  }
+  uint64_t GetFileSize(const rocksdb::IOOptions &options,
+                       rocksdb::IODebugContext *context) override {
+    // default 0...
+    return 0;
+  }
+  void SetPreallocationBlockSize(size_t size) override {
+    inner->SetPreallocationBlockSize(size);
+  }
+  void GetPreallocationStatus(size_t *block_size,
+                              size_t *last_allocated_block) override {
+    inner->GetPreallocationStatus(block_size, last_allocated_block);
+  }
+  size_t GetUniqueId(char *string, size_t size) const override {
+    return inner->GetUniqueId(string, size);
+  }
+  rocksdb::IOStatus InvalidateCache(size_t size, size_t size1) override {
+    return fromAqua(inner->InvalidateCache(size, size1));
+  }
+  rocksdb::IOStatus RangeSync(uint64_t uint64, uint64_t uint641,
+                              const rocksdb::IOOptions &options,
+                              rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->RangeSync(uint64, uint641, o, nullptr));
+  }
+  void PrepareWrite(size_t offset, size_t len,
+                    const rocksdb::IOOptions &options,
+                    rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    inner->PrepareWrite(offset, len, o, nullptr);
+  }
+  rocksdb::IOStatus Allocate(uint64_t uint64, uint64_t uint641,
+                             const rocksdb::IOOptions &options,
+                             rocksdb::IODebugContext *context) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Allocate(uint64, uint641, o, nullptr));
+  }
+};
+
+class FSRandomRWFileAdapter : public rocksdb::FSRandomRWFile {
+  std::unique_ptr<aquafs::FSRandomRWFile> inner;
+
+ public:
+  explicit FSRandomRWFileAdapter(
+      std::unique_ptr<aquafs::FSRandomRWFile> &&inner_)
+      : inner(std::move(inner_)) {}
+  bool use_direct_io() const override { return inner->use_direct_io(); }
+  size_t GetRequiredBufferAlignment() const override {
+    return inner->GetRequiredBufferAlignment();
+  }
+  rocksdb::IOStatus Write(uint64_t offset, const rocksdb::Slice &data,
+                          const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    aquafs::Slice d = toAqua(data);
+    return fromAqua(inner->Write(offset, d, o, nullptr));
+  }
+  rocksdb::IOStatus Read(uint64_t offset, size_t n,
+                         const rocksdb::IOOptions &options,
+                         rocksdb::Slice *result, char *scratch,
+                         rocksdb::IODebugContext *dbg) const override {
+    aquafs::IOOptions o;  // not used
+    aquafs::Slice d;
+    auto ret = fromAqua(inner->Read(offset, n, o, &d, scratch, nullptr));
+    *result = fromAqua(std::move(d));
+    return ret;
+  }
+  rocksdb::IOStatus Flush(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Flush(o, nullptr));
+  }
+  rocksdb::IOStatus Sync(const rocksdb::IOOptions &options,
+                         rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Sync(o, nullptr));
+  }
+  rocksdb::IOStatus Fsync(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Fsync(o, nullptr));
+  }
+  rocksdb::IOStatus Close(const rocksdb::IOOptions &options,
+                          rocksdb::IODebugContext *dbg) override {
+    aquafs::IOOptions o;  // not used
+    return fromAqua(inner->Close(o, nullptr));
+  }
+  rocksdb::Temperature GetTemperature() const override {
+    return fromAqua(inner->GetTemperature());
+  }
+};
+
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewSequentialFile(
     const std::string &f, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSSequentialFile> *r,
     rocksdb::IODebugContext *dbg) {
-  // return FileSystemWrapper::NewSequentialFile(f, file_opts, r, dbg);
   std::unique_ptr<aquafs::FSSequentialFile> result;
   auto ret = fromAqua(
       inner_->NewSequentialFile(f, toAqua(file_opts), &result, nullptr));
@@ -129,31 +384,51 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::NewRandomAccessFile(
     const std::string &f, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSRandomAccessFile> *r,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::NewRandomAccessFile(f, file_opts, r, dbg);
+  std::unique_ptr<aquafs::FSRandomAccessFile> result;
+  auto ret = fromAqua(
+      inner_->NewRandomAccessFile(f, toAqua(file_opts), &result, nullptr));
+  *r = std::make_unique<FSRandomAccessFileAdapter>(std::move(result));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewWritableFile(
     const std::string &f, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSWritableFile> *r, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::NewWritableFile(f, file_opts, r, dbg);
+  std::unique_ptr<aquafs::FSWritableFile> result;
+  auto ret =
+      fromAqua(inner_->NewWritableFile(f, toAqua(file_opts), &result, nullptr));
+  *r = std::make_unique<FSWritableFileAdapter>(std::move(result));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::ReopenWritableFile(
     const std::string &fname, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSWritableFile> *result,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::ReopenWritableFile(fname, file_opts, result, dbg);
+  std::unique_ptr<aquafs::FSWritableFile> r;
+  auto ret = fromAqua(
+      inner_->ReopenWritableFile(fname, toAqua(file_opts), &r, nullptr));
+  *result = std::make_unique<FSWritableFileAdapter>(std::move(r));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::ReuseWritableFile(
     const std::string &fname, const std::string &old_fname,
     const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSWritableFile> *r, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::ReuseWritableFile(fname, old_fname, file_opts, r,
-                                              dbg);
+  std::unique_ptr<aquafs::FSWritableFile> result;
+  aquafs::FileOptions o;  // not used
+  auto ret = fromAqua(
+      inner_->ReuseWritableFile(fname, old_fname, o, &result, nullptr));
+  *r = std::make_unique<FSWritableFileAdapter>(std::move(result));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewRandomRWFile(
     const std::string &fname, const rocksdb::FileOptions &file_opts,
     std::unique_ptr<rocksdb::FSRandomRWFile> *result,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::NewRandomRWFile(fname, file_opts, result, dbg);
+  std::unique_ptr<aquafs::FSRandomRWFile> r;
+  aquafs::FileOptions o;  // not used
+  auto ret = fromAqua(inner_->NewRandomRWFile(fname, o, &r, nullptr));
+  *result = std::make_unique<FSRandomRWFileAdapter>(std::move(r));
+  return ret;
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::NewMemoryMappedFileBuffer(
     const std::string &fname,
