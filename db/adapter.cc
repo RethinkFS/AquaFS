@@ -444,7 +444,8 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::NewDirectory(
 rocksdb::IOStatus AquaFSFileSystemWrapper::FileExists(
     const std::string &f, const rocksdb::IOOptions &io_opts,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::FileExists(f, io_opts, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->FileExists(f, o, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetChildren(
     const std::string &dir, const rocksdb::IOOptions &io_opts,
@@ -461,7 +462,8 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::GetChildrenFileAttributes(
 rocksdb::IOStatus AquaFSFileSystemWrapper::DeleteFile(
     const std::string &f, const rocksdb::IOOptions &options,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::DeleteFile(f, options, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->DeleteFile(f, o, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::Truncate(
     const std::string &fname, size_t size, const rocksdb::IOOptions &options,
@@ -486,13 +488,15 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::DeleteDir(
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetFileSize(
     const std::string &f, const rocksdb::IOOptions &options, uint64_t *s,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::GetFileSize(f, options, s, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->GetFileSize(f, o, s, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetFileModificationTime(
     const std::string &fname, const rocksdb::IOOptions &options,
     uint64_t *file_mtime, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::GetFileModificationTime(fname, options, file_mtime,
-                                                    dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->GetFileModificationTime(fname, o, file_mtime,
+                                                  nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetAbsolutePath(
     const std::string &db_path, const rocksdb::IOOptions &options,
@@ -502,23 +506,27 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::GetAbsolutePath(
 rocksdb::IOStatus AquaFSFileSystemWrapper::RenameFile(
     const std::string &s, const std::string &t,
     const rocksdb::IOOptions &options, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::RenameFile(s, t, options, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->RenameFile(s, t, o, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::LinkFile(
     const std::string &s, const std::string &t,
     const rocksdb::IOOptions &options, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::LinkFile(s, t, options, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->LinkFile(s, t, o, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::NumFileLinks(
     const std::string &fname, const rocksdb::IOOptions &options,
     uint64_t *count, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::NumFileLinks(fname, options, count, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->NumFileLinks(fname, o, count, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::AreFilesSame(
     const std::string &first, const std::string &second,
     const rocksdb::IOOptions &options, bool *res,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::AreFilesSame(first, second, options, res, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->AreFilesSame(first, second, o, res, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::LockFile(
     const std::string &f, const rocksdb::IOOptions &options,
@@ -581,12 +589,14 @@ rocksdb::FileOptions AquaFSFileSystemWrapper::OptimizeForBlobFileRead(
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetFreeSpace(
     const std::string &path, const rocksdb::IOOptions &options,
     uint64_t *diskfree, rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::GetFreeSpace(path, options, diskfree, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->GetFreeSpace(path, o, diskfree, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::IsDirectory(
     const std::string &path, const rocksdb::IOOptions &options, bool *is_dir,
     rocksdb::IODebugContext *dbg) {
-  return FileSystemWrapper::IsDirectory(path, options, is_dir, dbg);
+  aquafs::IOOptions o;  // not used
+  return fromAqua(inner_->IsDirectory(path, o, is_dir, nullptr));
 }
 const char *AquaFSFileSystemWrapper::Name() const {
   return "AquaFSFileSystemWrapper";
