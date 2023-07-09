@@ -281,8 +281,10 @@ class FSWritableFileAdapter : public rocksdb::FSWritableFile {
   }
   uint64_t GetFileSize(const rocksdb::IOOptions &options,
                        rocksdb::IODebugContext *context) override {
-    // default 0...
-    return 0;
+    aquafs::IOOptions o;  // not used
+    return inner->GetFileSize(o, nullptr);
+    // // default 0...
+    // return 0;
   }
   void SetPreallocationBlockSize(size_t size) override {
     inner->SetPreallocationBlockSize(size);
@@ -495,8 +497,8 @@ rocksdb::IOStatus AquaFSFileSystemWrapper::GetFileModificationTime(
     const std::string &fname, const rocksdb::IOOptions &options,
     uint64_t *file_mtime, rocksdb::IODebugContext *dbg) {
   aquafs::IOOptions o;  // not used
-  return fromAqua(inner_->GetFileModificationTime(fname, o, file_mtime,
-                                                  nullptr));
+  return fromAqua(
+      inner_->GetFileModificationTime(fname, o, file_mtime, nullptr));
 }
 rocksdb::IOStatus AquaFSFileSystemWrapper::GetAbsolutePath(
     const std::string &db_path, const rocksdb::IOOptions &options,
@@ -672,7 +674,8 @@ rocksdb::FactoryFunc<rocksdb::FileSystem> aquafs_filesystem_reg =
             *errmsg = "Malformed URI";
           }
           auto wrapper = new AquaFSFileSystemWrapper(
-              std::unique_ptr<aquafs::FileSystem>(fs), nullptr);
+              std::unique_ptr<aquafs::FileSystem>(fs),
+              rocksdb::FileSystem::Default());
           f->reset(wrapper);
           return f->get();
         });
