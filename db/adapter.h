@@ -13,9 +13,9 @@ namespace aquafs {
 
 class AquaFSFileSystemWrapper : public ROCKSDB_NAMESPACE::FileSystemWrapper {
  public:
-  std::unique_ptr<aquafs::FileSystem> inner_{};
-  AquaFSFileSystemWrapper(std::unique_ptr<aquafs::FileSystem> inner,
-                          std::shared_ptr<FileSystem> aux_fs);
+  std::unique_ptr<aquafs::FileSystem> inner_;
+  explicit AquaFSFileSystemWrapper(std::unique_ptr<aquafs::FileSystem> inner,
+                                   std::shared_ptr<FileSystem> aux_fs);
   ~AquaFSFileSystemWrapper() override;
   const char *Name() const override;
   rocksdb::IOStatus NewSequentialFile(
